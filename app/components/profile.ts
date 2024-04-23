@@ -5,21 +5,14 @@ async function push_profile(
   bot: any,
   username: string,
   chatId: number,
-  messageId: number
+  messageId: number,
 ) {
   const info = await getProfile(chatId.toString())
 
   console.log(info)
 
-  const check = info.fio
-    ? ''
-    : info.email
-    ? ''
-    : info.locale
-    ? ''
-    : '💭 Заполнить информацию'
   if (info) {
-    await bot.editMessageCaption(
+    await bot.editMessageText(
       `📈 <b>Вот твоя стата ${username}:</b>\n\n` +
         `● <b>ФИО:</b> <i>${
           info.fio === 'none' ? ` 🚫 <i><b>Не заполнено!</b></i>` : info.fio
@@ -74,7 +67,7 @@ async function push_profile(
             ],
           ],
         } as InlineKeyboardMarkup,
-      }
+      },
     )
   } else {
     console.log('User profile not found.')

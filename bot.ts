@@ -67,9 +67,9 @@ bot.onText(/\/start/, async msg => {
   //   await bot.deleteMessage(id, message_id - 1)
   // }
 
-  return bot.sendPhoto(id, './app/assets/stocklogo.png', {
-    caption: `<b>✌🏻 Yo ${first_name}! </b>${caption}`,
+  return bot.sendMessage(id, `<b>✌🏻 Yo ${first_name}! </b>${caption}`, {
     parse_mode: 'HTML',
+    disable_web_page_preview: true,
     reply_markup: {
       inline_keyboard: [
         [
@@ -103,9 +103,10 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
 
   switch (callbackQuery.data) {
     case 'main_menu':
-      await bot.editMessageCaption(`<b>✌🏻 Yo ${username}! </b>${caption}`, {
+      await bot.editMessageText(`<b>✌🏻 Yo ${username}! </b>${caption}`, {
         chat_id: chatId,
         message_id: messageId,
+        disable_web_page_preview: true,
         parse_mode: 'HTML',
         reply_markup: {
           inline_keyboard: [
@@ -135,7 +136,7 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
       break
 
     case 'locale':
-      await bot.editMessageCaption(
+      await bot.editMessageText(
         `<i>💭 <b>${username}</b>, введи город в который будет отправляться поссылка</i>`,
         {
           chat_id: chatId,
