@@ -23,7 +23,6 @@ async function add_user(data: createUserDto) {
 }
 
 async function getProfile(chat_id: string) {
-  console.log(typeof chat_id)
   try {
     const user = await axios.post(
       `${process.env.URL}/user/get`,
@@ -41,6 +40,63 @@ async function getProfile(chat_id: string) {
   } catch (error) {
     console.error(error)
     return null
+  }
+}
+
+export const addLocale = async (adress: string) => {
+  try {
+    const locale = await axios.post(
+      `${process.env.URL}/user/addLocale`,
+      {adress},
+      {headers: {'Content-Type': 'application/json'}},
+    )
+
+    if (locale.status === 200) {
+      return true
+    } else {
+      return false
+    }
+  } catch (error) {
+    console.log(error)
+    return false
+  }
+}
+
+export const addName = async (fio: string) => {
+  try {
+    const response = await axios.post(
+      `${process.env.URL}/user/addName`,
+      {fio},
+      {headers: {'Content-Type': 'application/json'}},
+    )
+
+    if (response.status === 200) {
+      return true
+    } else {
+      return false
+    }
+  } catch (error) {
+    console.log(error)
+    return false
+  }
+}
+
+export const addEmail = async (email: string) => {
+  try {
+    const response = await axios.post(
+      `${process.env.URL}/user/addEmail`,
+      {email},
+      {headers: {'Content-Type': 'application/json'}},
+    )
+
+    if (response.status === 200) {
+      return true
+    } else {
+      return false
+    }
+  } catch (error) {
+    console.log(error)
+    return false
   }
 }
 

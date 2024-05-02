@@ -9,7 +9,7 @@ import TgBot, {
 
 import {push_profile} from './app/components/profile'
 
-import {add_user} from './app/components/db'
+import {addLocale, add_user} from './app/components/db'
 import {createUserDto} from './app/components/types/db_types'
 
 const bot = new TgBot(process.env.TOKEN!, {polling: true})
@@ -34,6 +34,36 @@ const caption =
 
 console.log('App create by Anton Kamaev')
 
+const mainMessage = async (bot: any, chatId: number, messageId: number) => {
+  await bot.editMessageText(caption, {
+    chat_id: chatId,
+    message_id: messageId,
+    disable_web_page_preview: true,
+    parse_mode: 'HTML',
+    reply_markup: {
+      inline_keyboard: [
+        [
+          {
+            text: '⚡️ Начать пользоваться',
+            web_app: {url: 'https://stockhub12.ru/'},
+          },
+        ],
+        [{text: '✌🏻 Мой профиль', callback_data: 'profile'}],
+      ],
+    } as InlineKeyboardMarkup,
+  })
+}
+
+const errorMessage = async (bot: any, chatId: number) => {
+  await bot.sendMessage(
+    chatId,
+    '☠️Кажется я перезапускался\n<i>💭Используй <b>/start</b> для перезапуска бота</i>',
+    {
+      parse_mode: 'HTML',
+    },
+  )
+}
+
 bot.onText(/\/start/, async msg => {
   const {
     chat: {id, first_name},
@@ -44,28 +74,14 @@ bot.onText(/\/start/, async msg => {
     chat_id: `${id}`,
     username: `${first_name}`,
   }
-
-  const user = await add_user(data)
-
-  if (user === false) {
-    return bot.sendMessage(
-      id,
-      'error\n\n<i>Используй <b>/start</b> для перезапуска бота</i>',
-      {
-        parse_mode: 'HTML',
-      },
-    )
-  }
-
   userStorage[id] = {
     status: 'none',
   }
 
-  // FIX: Сделать логику удаления сообщений
-
-  // if (message_id && message_id - 2) {
-  //   await bot.deleteMessage(id, message_id - 1)
-  // }
+  const user = await add_user(data)
+  if (user === false) {
+    await errorMessage(bot, id)
+  }
 
   return bot.sendMessage(id, `<b>✌🏻 Yo ${first_name}! </b>${caption}`, {
     parse_mode: 'HTML',
@@ -90,49 +106,19 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
   const messageId: number = callbackQuery.message?.message_id || 0
 
   if (!chatId || !username || !messageId || !userStorage[chatId]) {
-    return bot.sendMessage(
-      chatId,
-      '☠️Кажется я перезапускался\n<i>💭Используй <b>/start</b> для перезапуска бота</i>',
-      {
-        parse_mode: 'HTML',
-      },
-    )
+    await bot.deleteMessage(chatId, messageId)
+    return errorMessage(bot, chatId)
   }
 
   // TODO: Сделать логику добавления почты, адреса, ФИО
 
   switch (callbackQuery.data) {
     case 'main_menu':
-      await bot.editMessageText(`<b>✌🏻 Yo ${username}! </b>${caption}`, {
-        chat_id: chatId,
-        message_id: messageId,
-        disable_web_page_preview: true,
-        parse_mode: 'HTML',
-        reply_markup: {
-          inline_keyboard: [
-            [
-              {
-                text: '⚡️ Начать пользоваться',
-                web_app: {url: 'https://stockhub12.ru/'},
-              },
-            ],
-            [{text: '✌🏻 Мой профиль', callback_data: 'profile'}],
-          ],
-        } as InlineKeyboardMarkup,
-      })
+      await mainMessage(bot, chatId, messageId)
       break
 
     case 'profile':
-      const res = await push_profile(bot, username, chatId, messageId)
-      if (res === false) {
-        await bot.sendMessage(
-          chatId,
-          '☠️Кажется я перезапускался\n<i>💭 Используй <b>/start</b> для перезапуска бота</i>',
-          {
-            parse_mode: 'HTML',
-          },
-        )
-      }
+      await push_profile(bot, username, chatId, messageId)
       break
 
     case 'locale':
@@ -144,20 +130,10 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
           parse_mode: 'HTML',
         },
       )
+
       userStorage[chatId] = {
         status: 'awaitLocale',
       }
-      break
-
-    default:
-      await bot.deleteMessage(chatId, messageId)
-      await bot.sendMessage(
-        chatId,
-        '☠️Кажется я перезапускался\n<i>💭Используй <b>/start</b> для перезапуска бота</i>',
-        {
-          parse_mode: 'HTML',
-        },
-      )
       break
   }
 })
@@ -169,26 +145,34 @@ bot.on('text', async msg => {
     message_id,
   }: Message = msg
 
-  if (userStorage[id]) {
+  if (userStorage[id] && text !== '/start') {
     const currentState = userStorage[id].status
+    const userText: string | undefined = text
+
+    await bot.deleteMessage(id, message_id)
 
     switch (currentState) {
       case 'awaitEmail':
-        await bot.deleteMessage(id, message_id)
         // TODO: Сделать валидацию по email с помощью @IsEmail()
+
         break
 
       case 'awaitLocale':
-        const userText = text
-        await bot.deleteMessage(id, message_id - 1)
+        console.log(currentState + ':', userText)
 
+        if (userText) {
+          await addLocale(userText)
+          await mainMessage(bot, id, message_id - 1)
+        } else {
+          await errorMessage(bot, id)
+        }
         break
 
       case 'awaitFIO':
         break
 
       case 'none':
-        // bot.deleteMessage(id, message_id);
+        bot.deleteMessage(id, message_id)
         break
     }
   }
