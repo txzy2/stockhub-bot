@@ -81,11 +81,14 @@ export const addName = async (fio: string) => {
   }
 }
 
-export const addEmail = async (email: string) => {
+export const addEmail = async (email: string, chat_id: number) => {
   try {
     const response = await axios.post(
       `${process.env.URL}/user/addEmail`,
-      {email},
+      {
+        chat_id: chat_id,
+        email: email,
+      },
       {headers: {'Content-Type': 'application/json'}},
     )
 

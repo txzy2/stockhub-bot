@@ -9,8 +9,9 @@ import TgBot, {
 
 import {push_profile} from './app/components/profile'
 
-import {addLocale, add_user} from './app/components/db'
+import {addEmail, addLocale, add_user} from './app/components/db'
 import {createUserDto} from './app/components/types/db_types'
+import {main_key, profile_key} from './app/components/keyboard'
 
 const bot = new TgBot(process.env.TOKEN!, {polling: true})
 interface UserStorage {
@@ -135,6 +136,21 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
         status: 'awaitLocale',
       }
       break
+
+    case 'email':
+      await bot.editMessageText(
+        `<i>💭 <b>${username}</b>, введи свой email</i>`,
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: 'HTML',
+        },
+      )
+
+      userStorage[chatId] = {
+        status: 'awaitEmail',
+      }
+      break
   }
 })
 
@@ -149,15 +165,34 @@ bot.on('text', async msg => {
     const currentState = userStorage[id].status
     const userText: string | undefined = text
 
-    await bot.deleteMessage(id, message_id)
-
     switch (currentState) {
       case 'awaitEmail':
-        // TODO: Сделать валидацию по email с помощью @IsEmail()
+        await bot.deleteMessage(id, message_id - 1)
+        await bot.deleteMessage(id, message_id)
+        if (userText) {
+          const email = await addEmail(userText, id)
+          if (email === false) {
+            return await bot.sendMessage(id, 'Не правильно введен email', {
+              reply_markup: main_key,
+            })
+          }
+
+          bot.sendMessage(
+            id,
+            `<b>${first_name}</b>, я успешно добавил твой email`,
+            {
+              parse_mode: 'HTML',
+              reply_markup: profile_key,
+            },
+          )
+        } else {
+          await errorMessage(bot, id)
+        }
 
         break
 
       case 'awaitLocale':
+        await bot.deleteMessage(id, message_id)
         console.log(currentState + ':', userText)
 
         if (userText) {
@@ -169,10 +204,6 @@ bot.on('text', async msg => {
         break
 
       case 'awaitFIO':
-        break
-
-      case 'none':
-        bot.deleteMessage(id, message_id)
         break
     }
   }
