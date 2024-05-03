@@ -140,11 +140,7 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
     case 'fio':
       await bot.editMessageText(
         `<i>💭 <b>${username}</b>, введи свое ФИО (для формирования получаетяля при заказе)</i>`,
-        {
-          chat_id: chatId,
-          message_id: messageId,
-          parse_mode: 'HTML',
-        },
+        { chat_id: chatId, message_id: messageId, parse_mode: 'HTML' },
       )
 
       userStorage[chatId] = {
