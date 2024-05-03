@@ -9,8 +9,6 @@ async function push_profile(
 ) {
   const info = await getProfile(chatId.toString())
 
-  console.log(info)
-
   if (info) {
     await bot.editMessageText(
       `📈 <b>Вот твоя стата ${username}:</b>\n\n` +
@@ -44,17 +42,24 @@ async function push_profile(
             ],
             [
               {
-                text: '📦 Обновить адрес',
+                text:
+                  info.locale !== 'none'
+                    ? '📦 Обновить адрес'
+                    : '📦 Заполнить адрес',
                 callback_data: 'locale',
               },
             ],
             [
               {
-                text: '✉️ Поменять email',
+                text:
+                  info.email !== 'none'
+                    ? '✉️ Поменять email'
+                    : '✉️  Заполнить email',
                 callback_data: 'email',
               },
               {
-                text: '👤 Поменять ФИО',
+                text:
+                  info.fio !== 'none' ? '👤 Поменять ФИО' : '👤 Заполнить ФИО',
                 callback_data: 'fio',
               },
             ],

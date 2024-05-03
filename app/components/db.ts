@@ -1,4 +1,4 @@
-import {createUserDto} from './types/db_types'
+import { createUserDto } from './types/db_types'
 import axios from 'axios'
 
 async function add_user(data: createUserDto) {
@@ -6,7 +6,7 @@ async function add_user(data: createUserDto) {
     const response = await fetch(`${process.env.URL}/user/add`, {
       method: 'POST',
       body: JSON.stringify(data),
-      headers: {'Content-Type': 'application/json'},
+      headers: { 'Content-Type': 'application/json' },
     })
 
     if (response.ok) {
@@ -26,9 +26,9 @@ async function getProfile(chat_id: string) {
   try {
     const user = await axios.post(
       `${process.env.URL}/user/get`,
-      {chat_id},
+      { chat_id },
       {
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
       },
     )
 
@@ -43,12 +43,15 @@ async function getProfile(chat_id: string) {
   }
 }
 
-export const addLocale = async (adress: string) => {
+export const addLocale = async (adress: string, chat_id: number) => {
   try {
     const locale = await axios.post(
-      `${process.env.URL}/user/addLocale`,
-      {adress},
-      {headers: {'Content-Type': 'application/json'}},
+      `${process.env.URL}/user/addAddres`,
+      {
+        chat_id: chat_id,
+        adress: adress,
+      },
+      { headers: { 'Content-Type': 'application/json' } },
     )
 
     if (locale.status === 200) {
@@ -62,12 +65,15 @@ export const addLocale = async (adress: string) => {
   }
 }
 
-export const addName = async (fio: string) => {
+export const addName = async (fio: string, chat_id: number) => {
   try {
     const response = await axios.post(
       `${process.env.URL}/user/addName`,
-      {fio},
-      {headers: {'Content-Type': 'application/json'}},
+      {
+        chat_id: chat_id,
+        fio: fio,
+      },
+      { headers: { 'Content-Type': 'application/json' } },
     )
 
     if (response.status === 200) {
@@ -89,7 +95,7 @@ export const addEmail = async (email: string, chat_id: number) => {
         chat_id: chat_id,
         email: email,
       },
-      {headers: {'Content-Type': 'application/json'}},
+      { headers: { 'Content-Type': 'application/json' } },
     )
 
     if (response.status === 200) {
@@ -103,4 +109,4 @@ export const addEmail = async (email: string, chat_id: number) => {
   }
 }
 
-export {add_user, getProfile}
+export { add_user, getProfile }

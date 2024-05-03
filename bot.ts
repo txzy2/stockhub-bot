@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv'
-dotenv.config({path: './.env'})
+dotenv.config({ path: './.env' })
 
 import TgBot, {
   CallbackQuery,
@@ -7,15 +7,15 @@ import TgBot, {
   Message,
 } from 'node-telegram-bot-api'
 
-import {push_profile} from './app/components/profile'
+import { push_profile } from './app/components/profile'
 
-import {addEmail, addLocale, add_user} from './app/components/db'
-import {createUserDto} from './app/components/types/db_types'
-import {main_key, profile_key} from './app/components/keyboard'
+import { addEmail, addLocale, addName, add_user } from './app/components/db'
+import { createUserDto } from './app/components/types/db_types'
+import { main_key, profile_key } from './app/components/keyboard'
 
-const bot = new TgBot(process.env.TOKEN!, {polling: true})
+const bot = new TgBot(process.env.TOKEN!, { polling: true })
 interface UserStorage {
-  [key: number]: {status: string}
+  [key: number]: { status: string }
 }
 let userStorage: UserStorage = {}
 
@@ -46,10 +46,10 @@ const mainMessage = async (bot: any, chatId: number, messageId: number) => {
         [
           {
             text: '⚡️ Начать пользоваться',
-            web_app: {url: 'https://stockhub12.ru/'},
+            web_app: { url: 'https://stockhub12.ru/' },
           },
         ],
-        [{text: '✌🏻 Мой профиль', callback_data: 'profile'}],
+        [{ text: '✌🏻 Мой профиль', callback_data: 'profile' }],
       ],
     } as InlineKeyboardMarkup,
   })
@@ -67,7 +67,7 @@ const errorMessage = async (bot: any, chatId: number) => {
 
 bot.onText(/\/start/, async msg => {
   const {
-    chat: {id, first_name},
+    chat: { id, first_name },
     message_id,
   } = msg
 
@@ -92,10 +92,10 @@ bot.onText(/\/start/, async msg => {
         [
           {
             text: '⚡️ Начать пользоваться',
-            web_app: {url: 'https://stockhub12.ru'},
+            web_app: { url: 'https://stockhub12.ru' },
           },
         ],
-        [{text: '✌🏻 Мой профиль', callback_data: 'profile'}],
+        [{ text: '✌🏻 Мой профиль', callback_data: 'profile' }],
       ],
     } as InlineKeyboardMarkup,
   })
@@ -124,7 +124,7 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
 
     case 'locale':
       await bot.editMessageText(
-        `<i>💭 <b>${username}</b>, введи город в который будет отправляться поссылка</i>`,
+        `<i>💭 <b>${username}</b>, введи <b>адрес ПВЗ BoxBerry</b> (город и дом, в котором находится ПВЗ)</i>`,
         {
           chat_id: chatId,
           message_id: messageId,
@@ -137,9 +137,24 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
       }
       break
 
+    case 'fio':
+      await bot.editMessageText(
+        `<i>💭 <b>${username}</b>, введи свое ФИО (для формирования получаетяля при заказе)</i>`,
+        {
+          chat_id: chatId,
+          message_id: messageId,
+          parse_mode: 'HTML',
+        },
+      )
+
+      userStorage[chatId] = {
+        status: 'awaitFIO',
+      }
+      break
+
     case 'email':
       await bot.editMessageText(
-        `<i>💭 <b>${username}</b>, введи свой email</i>`,
+        `<i>💭 <b>${username}</b>, введи свой email (сюда придет чек после оплаты)</i>`,
         {
           chat_id: chatId,
           message_id: messageId,
@@ -156,7 +171,7 @@ bot.on('callback_query', async (callbackQuery: CallbackQuery) => {
 
 bot.on('text', async msg => {
   const {
-    chat: {id, first_name},
+    chat: { id, first_name },
     text,
     message_id,
   }: Message = msg
@@ -192,18 +207,52 @@ bot.on('text', async msg => {
         break
 
       case 'awaitLocale':
+        await bot.deleteMessage(id, message_id - 1)
         await bot.deleteMessage(id, message_id)
-        console.log(currentState + ':', userText)
-
         if (userText) {
-          await addLocale(userText)
-          await mainMessage(bot, id, message_id - 1)
+          const locale = await addLocale(userText, id)
+          if (locale === false) {
+            return await bot.sendMessage(id, 'Не правильно введен адрес', {
+              reply_markup: main_key,
+            })
+          }
+
+          bot.sendMessage(
+            id,
+            `<b>${first_name}</b>, я успешно добавил твой адрес доставки`,
+            {
+              parse_mode: 'HTML',
+              reply_markup: profile_key,
+            },
+          )
         } else {
           await errorMessage(bot, id)
         }
         break
 
       case 'awaitFIO':
+        await bot.deleteMessage(id, message_id - 1)
+        await bot.deleteMessage(id, message_id)
+        if (userText) {
+          const fio = await addName(userText, id)
+          if (fio === false) {
+            return await bot.sendMessage(id, 'Не правильно введен ФИО', {
+              reply_markup: main_key,
+            })
+          }
+
+          bot.sendMessage(
+            id,
+            `<b>${first_name}</b>, я успешно добавил твое ФИО`,
+            {
+              parse_mode: 'HTML',
+              reply_markup: profile_key,
+            },
+          )
+        } else {
+          await errorMessage(bot, id)
+        }
+
         break
     }
   }
